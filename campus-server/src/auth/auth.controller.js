@@ -14,10 +14,10 @@ router.post('/send-code', async (req, res) => {
 })
 
 // 验证验证码接口
-router.post('/verify', (req, res) => {
+router.post('/verify', async (req, res) => {
   try {
     const { email, code } = req.body
-    const result = authService.verify(email, code)
+    const result = await authService.verify(email, code)
     res.json(result)
   } catch (err) {
     res.status(400).json({ message: err.message })
