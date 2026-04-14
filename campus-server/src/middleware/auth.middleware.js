@@ -13,7 +13,8 @@ function authMiddleware(req, res, next) {
 
     req.user = {
       userId: payload.userId,
-      email: payload.email
+      email: payload.email,
+      status: payload.status
     }
 
     next()

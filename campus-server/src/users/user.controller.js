@@ -27,4 +27,16 @@ router.patch('/me', authMiddleware, async (req, res) => {
   }
 })
 
+router.post('/student-auth', authMiddleware, async (req, res) => {
+  try {
+    const user = await userService.submitAuth(req.user.userId, req.body)
+    res.json({
+      message: '学生认证申请已提交，等待审核',
+      user
+    })
+  } catch (err) {
+    res.status(400).json({ message: err.message })
+  }
+})
+
 module.exports = router

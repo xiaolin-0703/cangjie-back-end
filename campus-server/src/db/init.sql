@@ -7,6 +7,7 @@ USE campus_app;
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   email VARCHAR(100) NOT NULL UNIQUE,
+  real_name VARCHAR(50) DEFAULT NULL,
   nickname VARCHAR(50) DEFAULT NULL,
   avatar_url VARCHAR(255) DEFAULT NULL,
   grade VARCHAR(20) DEFAULT NULL,
@@ -17,6 +18,10 @@ CREATE TABLE IF NOT EXISTS users (
 
   identity_mode ENUM('real', 'anonymous') NOT NULL DEFAULT 'real',
   student_verified TINYINT(1) NOT NULL DEFAULT 0,
+  auth_status ENUM('unverified', 'pending', 'verified', 'rejected') NOT NULL DEFAULT 'unverified',
+  auth_submitted_at DATETIME DEFAULT NULL,
+  auth_reviewed_at DATETIME DEFAULT NULL,
+  auth_reject_reason VARCHAR(255) DEFAULT NULL,
   profile_completed TINYINT(1) NOT NULL DEFAULT 0,
 
   status ENUM('active', 'banned', 'deleted') NOT NULL DEFAULT 'active',

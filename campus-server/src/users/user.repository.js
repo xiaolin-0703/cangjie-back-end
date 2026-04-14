@@ -1,0 +1,137 @@
+const pool = require('../db/db')
+
+function formatUser(user) {
+  if (!user) return null
+
+  return {
+    id: user.id,
+    email: user.email,
+    realName: user.real_name,
+    nickname: user.nickname,
+    avatarUrl: user.avatar_url,
+    grade: user.grade,
+    department: user.department,
+    studentNo: user.student_no,
+    phone: user.phone,
+    bio: user.bio,
+    identityMode: user.identity_mode,
+    studentVerified: Boolean(user.student_verified),
+    authStatus: user.auth_status,
+    authSubmittedAt: user.auth_submitted_at,
+    authReviewedAt: user.auth_reviewed_at,
+    authRejectReason: user.auth_reject_reason,
+    profileCompleted: Boolean(user.profile_completed),
+    status: user.status,
+    lastLoginAt: user.last_login_at,
+    createdAt: user.created_at,
+    updatedAt: user.updated_at,
+  }
+}
+
+async function findUserById(userId) {
+  const [rows] = await pool.query(
+    'SELECT * FROM users WHERE id = ? LIMIT 1',
+    [userId]
+  )
+
+  return formatUser(rows[0])
+}
+
+async function updateUser(userId, data) {
+  const fields = []
+  const values = []
+
+  if (Object.prototype.hasOwnProperty.call(data, 'nickname')) {
+    fields.push('nickname = ?')
+    values.push(data.nickname)
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'avatarUrl')) {
+    fields.push('avatar_url = ?')
+    values.push(data.avatarUrl)
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'grade')) {
+    fields.push('grade = ?')
+    values.push(data.grade)
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'department')) {
+    fields.push('department = ?')
+    values.push(data.department)
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'phone')) {
+    fields.push('phone = ?')
+    values.push(data.phone)
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'bio')) {
+    fields.push('bio = ?')
+    values.push(data.bio)
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'identityMode')) {
+    fields.push('identity_mode = ?')
+    values.push(data.identityMode)
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'profileCompleted')) {
+    fields.push('profile_completed = ?')
+    values.push(data.profileCompleted ? 1 : 0)
+  }
+
+  if (fields.length === 0) {
+    return await findUserById(userId)
+  }
+
+  values.push(userId)
+
+  const [result] = await pool.query(
+    `UPDATE users SET ${fields.join(', ')} WHERE id = ?`,
+    values
+  )
+
+  if (result.affectedRows === 0) {
+    return null
+  }
+
+  return await findUserById(userId)
+}
+
+async function submitStudentAuth(userId, data) {
+  const [result] = await pool.query(
+    `
+    UPDATE users
+    SET
+      real_name = ?,
+      student_no = ?,
+      grade = ?,
+      department = ?,
+      auth_status = 'pending',
+      auth_submitted_at = NOW(),
+      auth_reviewed_at = NULL,
+      auth_reject_reason = NULL
+    WHERE id = ?
+    `,
+    [
+      data.realName,
+      data.studentNo,
+      data.grade,
+      data.department,
+      userId
+    ]
+  )
+
+  if (result.affectedRows === 0) {
+    return null
+  }
+
+  return await findUserById(userId)
+}
+
+module.exports = {
+  findUserById,
+  updateUser,
+  submitStudentAuth,
+}
