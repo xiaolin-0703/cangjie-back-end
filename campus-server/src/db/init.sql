@@ -15,7 +15,6 @@ CREATE TABLE IF NOT EXISTS users (
   student_no VARCHAR(50) DEFAULT NULL,
   phone VARCHAR(20) DEFAULT NULL,
   bio VARCHAR(255) DEFAULT NULL,
-
   identity_mode ENUM('real', 'anonymous') NOT NULL DEFAULT 'real',
   student_verified TINYINT(1) NOT NULL DEFAULT 0,
   auth_status ENUM('unverified', 'pending', 'verified', 'rejected') NOT NULL DEFAULT 'unverified',
@@ -23,10 +22,19 @@ CREATE TABLE IF NOT EXISTS users (
   auth_reviewed_at DATETIME DEFAULT NULL,
   auth_reject_reason VARCHAR(255) DEFAULT NULL,
   profile_completed TINYINT(1) NOT NULL DEFAULT 0,
-
   status ENUM('active', 'banned', 'deleted') NOT NULL DEFAULT 'active',
   last_login_at DATETIME DEFAULT NULL,
-
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS email_verification_codes (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  email VARCHAR(100) NOT NULL,
+  code VARCHAR(10) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_email_used_created (email, used, created_at),
+  INDEX idx_expires_at (expires_at)
 );

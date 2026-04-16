@@ -37,6 +37,58 @@ async function findUserById(userId) {
   return formatUser(rows[0])
 }
 
+async function findUserByEmail(email) {
+  const [rows] = await pool.query(
+    'SELECT * FROM users WHERE email = ? LIMIT 1',
+    [email]
+  )
+
+  return formatUser(rows[0])
+}
+
+async function createUser(data) {
+  const [result] = await pool.query(
+    `
+    INSERT INTO users (
+      email,
+      nickname,
+      avatar_url,
+      grade,
+      department,
+      identity_mode,
+      profile_completed,
+      status,
+      last_login_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `,
+    [
+      data.email,
+      data.nickname ?? null,
+      data.avatarUrl ?? null,
+      data.grade ?? null,
+      data.department ?? null,
+      data.identityMode || 'real',
+      data.profileCompleted ? 1 : 0,
+      data.status || 'active',
+    ]
+  )
+
+  return await findUserById(result.insertId)
+}
+
+async function updateLastLoginAt(userId) {
+  const [result] = await pool.query(
+    'UPDATE users SET last_login_at = NOW() WHERE id = ?',
+    [userId]
+  )
+
+  if (result.affectedRows === 0) {
+    return null
+  }
+
+  return await findUserById(userId)
+}
+
 async function updateUser(userId, data) {
   const fields = []
   const values = []
@@ -114,13 +166,7 @@ async function submitStudentAuth(userId, data) {
       auth_reject_reason = NULL
     WHERE id = ?
     `,
-    [
-      data.realName,
-      data.studentNo,
-      data.grade,
-      data.department,
-      userId
-    ]
+    [data.realName, data.studentNo, data.grade, data.department, userId]
   )
 
   if (result.affectedRows === 0) {
@@ -132,6 +178,9 @@ async function submitStudentAuth(userId, data) {
 
 module.exports = {
   findUserById,
+  findUserByEmail,
+  createUser,
+  updateLastLoginAt,
   updateUser,
   submitStudentAuth,
 }

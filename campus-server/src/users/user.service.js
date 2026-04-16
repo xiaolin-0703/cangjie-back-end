@@ -58,6 +58,12 @@ function validateProfilePayload(payload) {
       throw new Error('简介长度不能超过 255 个字符')
     }
   }
+
+  if (payload.identityMode !== undefined && payload.identityMode !== null) {
+    if (!['real', 'anonymous'].includes(payload.identityMode)) {
+      throw new Error('身份模式非法')
+    }
+  }
 }
 
 async function getMe(userId) {
@@ -96,6 +102,10 @@ async function updateProfile(userId, data) {
     payload.bio = normalizeOptionalString(input.bio)
   }
 
+  if (Object.prototype.hasOwnProperty.call(input, 'identityMode')) {
+    payload.identityMode = normalizeOptionalString(input.identityMode)
+  }
+
   const currentUser = await findUserById(userId)
   ensureEditableUser(currentUser)
 
@@ -122,7 +132,11 @@ async function updateProfile(userId, data) {
     throw new Error('用户不存在')
   }
 
-  return user
+  return {
+    message: '资料更新成功',
+    user,
+    nextPage: user.profileCompleted ? 'home' : 'profile',
+  }
 }
 
 async function updateMode(userId, identityMode) {
@@ -205,11 +219,7 @@ async function submitAuth(userId, data) {
 
 module.exports = {
   getMe,
-<<<<<<< HEAD
-  updateMe
-=======
   updateProfile,
   updateMode,
   submitAuth,
->>>>>>> wz
 }
