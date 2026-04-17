@@ -1,9 +1,11 @@
+const { findUserById } = require('../users/user.repository')
 const {
   findEventById,
   listFeaturedEvents,
   listMyEvents,
   hasUserRegistered,
   createRegistration,
+  createEventRecord,
 } = require('./event.repository')
 
 async function getFeaturedEvents() {
@@ -22,6 +24,7 @@ async function getMyEvents(userId) {
 
 async function createEvent(userId, data) {
   const user = await findUserById(userId)
+
   if (!user) {
     throw new Error('用户不存在')
   }
@@ -35,10 +38,21 @@ async function createEvent(userId, data) {
   const description = String(data.description || '').trim()
   const coverUrl = String(data.coverUrl || '').trim()
 
-  if (!title) throw new Error('活动标题不能为空')
-  if (!startTime) throw new Error('活动时间不能为空')
-  if (!['online', 'offline'].includes(type)) throw new Error('活动类型非法')
-  if (capacity < 1) throw new Error('人数上限必须大于 0')
+  if (!title) {
+    throw new Error('活动标题不能为空')
+  }
+
+  if (!startTime) {
+    throw new Error('活动时间不能为空')
+  }
+
+  if (!['online', 'offline'].includes(type)) {
+    throw new Error('活动类型非法')
+  }
+
+  if (capacity < 1) {
+    throw new Error('人数上限必须大于 0')
+  }
 
   const event = await createEventRecord({
     title,
@@ -46,9 +60,9 @@ async function createEvent(userId, data) {
     startTime,
     location,
     capacity,
-    signupDeadline: signupDeadline || null,
-    description: description || null,
-    coverUrl: coverUrl || null,
+    signupDeadline: signupDeadline == "" ? null : signupDeadline,
+    description: description == "" ? null : description,
+    coverUrl: coverUrl == "" ? null : coverUrl,
     creatorId: userId,
   })
 
@@ -103,5 +117,6 @@ async function registerEvent(userId, eventId) {
 module.exports = {
   getFeaturedEvents,
   getMyEvents,
+  createEvent,
   registerEvent,
 }
