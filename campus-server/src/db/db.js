@@ -15,6 +15,7 @@ const pool = mysql.createPool({
   database: DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
+  queueLimit: 0,
 })
 
 async function ensureDatabaseReady() {
@@ -71,6 +72,87 @@ async function ensureDatabaseReady() {
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_email_used_created (email, used, created_at),
         INDEX idx_expires_at (expires_at)
+      )
+    `)
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS tags (
+        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL UNIQUE,
+        category VARCHAR(50) DEFAULT NULL,
+        status ENUM('active', 'disabled') NOT NULL DEFAULT 'active',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `)
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS user_tags (
+        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+        user_id BIGINT NOT NULL,
+        tag_id BIGINT NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_user_tag (user_id, tag_id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_tag_id (tag_id)
+      )
+    `)
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS circles (
+        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        description VARCHAR(255) DEFAULT NULL,
+        cover_url VARCHAR(255) DEFAULT NULL,
+        creator_id BIGINT DEFAULT NULL,
+        is_public TINYINT(1) NOT NULL DEFAULT 1,
+        status ENUM('active', 'archived', 'deleted') NOT NULL DEFAULT 'active',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `)
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS circle_members (
+        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+        circle_id BIGINT NOT NULL,
+        user_id BIGINT NOT NULL,
+        role ENUM('owner', 'admin', 'member') NOT NULL DEFAULT 'member',
+        joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_circle_member (circle_id, user_id),
+        INDEX idx_circle_id (circle_id),
+        INDEX idx_user_id (user_id)
+      )
+    `)
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS events (
+        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+        title VARCHAR(100) NOT NULL,
+        type ENUM('online', 'offline') NOT NULL DEFAULT 'offline',
+        start_time DATETIME NOT NULL,
+        location VARCHAR(255) DEFAULT NULL,
+        capacity INT NOT NULL DEFAULT 0,
+        signup_deadline DATETIME DEFAULT NULL,
+        description TEXT DEFAULT NULL,
+        cover_url VARCHAR(255) DEFAULT NULL,
+        creator_id BIGINT DEFAULT NULL,
+        status ENUM('draft', 'published', 'cancelled', 'finished') NOT NULL DEFAULT 'published',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `)
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS event_registrations (
+        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+        event_id BIGINT NOT NULL,
+        user_id BIGINT NOT NULL,
+        status ENUM('registered', 'cancelled') NOT NULL DEFAULT 'registered',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_event_registration (event_id, user_id),
+        INDEX idx_event_id (event_id),
+        INDEX idx_user_id (user_id)
       )
     `)
   } finally {

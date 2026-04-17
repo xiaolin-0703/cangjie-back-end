@@ -176,6 +176,69 @@ async function submitStudentAuth(userId, data) {
   return await findUserById(userId)
 }
 
+async function listRecommendedUsersForHome(userId, limit = 10) {
+  const [rows] = await pool.query(
+    `
+    SELECT
+      id,
+      email,
+      real_name,
+      nickname,
+      avatar_url,
+      grade,
+      department,
+      student_no,
+      phone,
+      bio,
+      identity_mode,
+      student_verified,
+      auth_status,
+      auth_submitted_at,
+      auth_reviewed_at,
+      auth_reject_reason,
+      profile_completed,
+      status,
+      last_login_at,
+      created_at,
+      updated_at
+    FROM users
+    WHERE id <> ?
+      AND status = 'active'
+    ORDER BY last_login_at DESC, created_at DESC
+    LIMIT ?
+    `,
+    [userId, limit]
+  )
+
+  return rows.map(row => ({
+    id: row.id,
+    email: row.email,
+    realName: row.real_name,
+    nickname: row.nickname,
+    avatarUrl: row.avatar_url,
+    grade: row.grade,
+    department: row.department,
+    studentNo: row.student_no,
+    phone: row.phone,
+    bio: row.bio,
+    identityMode: row.identity_mode,
+    studentVerified: Boolean(row.student_verified),
+    authStatus: row.auth_status,
+    authSubmittedAt: row.auth_submitted_at,
+    authReviewedAt: row.auth_reviewed_at,
+    authRejectReason: row.auth_reject_reason,
+    profileCompleted: Boolean(row.profile_completed),
+    status: row.status,
+    lastLoginAt: row.last_login_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    tags: [],
+    matchRate: 80,
+    online: false,
+  }))
+}
+
+
 module.exports = {
   findUserById,
   findUserByEmail,
@@ -183,4 +246,5 @@ module.exports = {
   updateLastLoginAt,
   updateUser,
   submitStudentAuth,
+   listRecommendedUsersForHome,
 }
