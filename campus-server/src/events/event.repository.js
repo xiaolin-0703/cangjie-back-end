@@ -34,6 +34,18 @@ function formatEvent(row) {
   }
 }
 
+function formatRegistration(row) {
+  return {
+    userId: row.user_id,
+    nickname: row.nickname,
+    realName: row.real_name,
+    avatarUrl: row.avatar_url,
+    grade: row.grade,
+    department: row.department,
+    email: row.email,
+  }
+}
+
 async function findEventById(eventId) {
   const [rows] = await pool.query(
     `
@@ -99,6 +111,50 @@ async function listMyEvents(userId) {
   return rows.map(formatEvent)
 }
 
+async function listCreatedEvents(userId) {
+  const [rows] = await pool.query(
+    `
+    SELECT
+      e.*,
+      COUNT(er.id) AS registered_count
+    FROM events e
+    LEFT JOIN event_registrations er
+      ON er.event_id = e.id
+     AND er.status = 'registered'
+    WHERE e.creator_id = ?
+    GROUP BY e.id
+    ORDER BY e.created_at DESC, e.start_time DESC
+    `,
+    [userId]
+  )
+
+  return rows.map(formatEvent)
+}
+
+async function listEventRegistrations(eventId) {
+  const [rows] = await pool.query(
+    `
+    SELECT
+      er.user_id,
+      u.nickname,
+      u.real_name,
+      u.avatar_url,
+      u.grade,
+      u.department,
+      u.email
+    FROM event_registrations er
+    JOIN users u
+      ON u.id = er.user_id
+    WHERE er.event_id = ?
+      AND er.status = 'registered'
+    ORDER BY er.id ASC
+    `,
+    [eventId]
+  )
+
+  return rows.map(formatRegistration)
+}
+
 async function hasUserRegistered(eventId, userId) {
   const [rows] = await pool.query(
     `
@@ -125,7 +181,6 @@ async function createRegistration(eventId, userId) {
 
   return findEventById(eventId)
 }
-
 
 async function createEventRecord(data) {
   const [result] = await pool.query(
@@ -163,6 +218,8 @@ module.exports = {
   findEventById,
   listFeaturedEvents,
   listMyEvents,
+  listCreatedEvents,
+  listEventRegistrations,
   hasUserRegistered,
   createRegistration,
   createEventRecord,

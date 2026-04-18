@@ -3,6 +3,8 @@ const {
   findEventById,
   listFeaturedEvents,
   listMyEvents,
+  listCreatedEvents,
+  listEventRegistrations,
   hasUserRegistered,
   createRegistration,
   createEventRecord,
@@ -20,6 +22,41 @@ async function getMyEvents(userId) {
   }
 
   return listMyEvents(userId)
+}
+
+async function getCreatedEvents(userId) {
+  const user = await findUserById(userId)
+
+  if (!user) {
+    throw new Error('用户不存在')
+  }
+
+  return listCreatedEvents(userId)
+}
+
+async function getEventRegistrations(userId, eventId) {
+  const user = await findUserById(userId)
+
+  if (!user) {
+    throw new Error('用户不存在')
+  }
+
+  const event = await findEventById(eventId)
+
+  if (!event) {
+    throw new Error('活动不存在')
+  }
+
+  if (Number(event.creatorId) !== Number(userId)) {
+    throw new Error('只有活动发起人可以查看报名名单')
+  }
+
+  const registrations = await listEventRegistrations(eventId)
+
+  return {
+    event,
+    registrations,
+  }
 }
 
 async function createEvent(userId, data) {
@@ -60,9 +97,9 @@ async function createEvent(userId, data) {
     startTime,
     location,
     capacity,
-    signupDeadline: signupDeadline == "" ? null : signupDeadline,
-    description: description == "" ? null : description,
-    coverUrl: coverUrl == "" ? null : coverUrl,
+    signupDeadline: signupDeadline || null,
+    description: description || null,
+    coverUrl: coverUrl || null,
     creatorId: userId,
   })
 
@@ -117,6 +154,8 @@ async function registerEvent(userId, eventId) {
 module.exports = {
   getFeaturedEvents,
   getMyEvents,
+  getCreatedEvents,
+  getEventRegistrations,
   createEvent,
   registerEvent,
 }
