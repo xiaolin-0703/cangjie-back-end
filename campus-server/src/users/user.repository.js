@@ -246,5 +246,5 @@ module.exports = {
   updateLastLoginAt,
   updateUser,
   submitStudentAuth,
-   listRecommendedUsersForHome,
+   listRecommendedUsersForHome, 
 }

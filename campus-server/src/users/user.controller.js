@@ -4,6 +4,7 @@ const router = express.Router()
 const authMiddleware = require('../middleware/auth.middleware')
 const userService = require('./user.service')
 
+
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await userService.getMe(req.user.userId)
@@ -24,6 +25,7 @@ async function handleUpdateMe(req, res) {
 
 router.put('/me', authMiddleware, handleUpdateMe)
 router.patch('/me', authMiddleware, handleUpdateMe)
+router.post('/me/update', authMiddleware, handleUpdateMe)
 
 router.post('/student-auth', authMiddleware, async (req, res) => {
   try {

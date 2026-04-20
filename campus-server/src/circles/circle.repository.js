@@ -17,34 +17,28 @@ function formatCircle(row) {
   }
 }
 
-async function findCircleById(circleId) {
+async function listHotCircles(limit = 3) {
   const [rows] = await pool.query(
     `
     SELECT
-      c.*,
+      c.id,
+      c.name,
+      c.description,
+      c.cover_url,
+      c.creator_id,
+      c.is_public,
+      c.status,
+      c.created_at,
+      c.updated_at,
       COUNT(cm.id) AS member_count
     FROM circles c
-    LEFT JOIN circle_members cm ON cm.circle_id = c.id
-    WHERE c.id = ?
-    GROUP BY c.id
-    LIMIT 1
-    `,
-    [circleId]
-  )
-
-  return formatCircle(rows[0])
-}
-
-async function listHotCircles(limit = 6) {
-  const [rows] = await pool.query(
-    `
-    SELECT
-      c.*,
-      COUNT(cm.id) AS member_count
-    FROM circles c
-    LEFT JOIN circle_members cm ON cm.circle_id = c.id
+    LEFT JOIN circle_members cm
+      ON cm.circle_id = c.id
     WHERE c.status = 'active'
-    GROUP BY c.id
+    GROUP BY
+      c.id, c.name, c.description, c.cover_url,
+      c.creator_id, c.is_public, c.status,
+      c.created_at, c.updated_at
     ORDER BY member_count DESC, c.created_at DESC
     LIMIT ?
     `,
@@ -54,27 +48,68 @@ async function listHotCircles(limit = 6) {
   return rows.map(formatCircle)
 }
 
-async function listMyCircles(userId) {
+async function listCircles(limit = 20) {
   const [rows] = await pool.query(
     `
     SELECT
-      c.*,
-      COUNT(all_members.id) AS member_count
-    FROM circle_members mine
-    JOIN circles c ON c.id = mine.circle_id
-    LEFT JOIN circle_members all_members ON all_members.circle_id = c.id
-    WHERE mine.user_id = ?
-      AND c.status = 'active'
-    GROUP BY c.id
-    ORDER BY mine.joined_at DESC
+      c.id,
+      c.name,
+      c.description,
+      c.cover_url,
+      c.creator_id,
+      c.is_public,
+      c.status,
+      c.created_at,
+      c.updated_at,
+      COUNT(cm.id) AS member_count
+    FROM circles c
+    LEFT JOIN circle_members cm
+      ON cm.circle_id = c.id
+    WHERE c.status = 'active'
+    GROUP BY
+      c.id, c.name, c.description, c.cover_url,
+      c.creator_id, c.is_public, c.status,
+      c.created_at, c.updated_at
+    ORDER BY member_count DESC, c.created_at DESC
+    LIMIT ?
     `,
-    [userId]
+    [limit]
   )
 
   return rows.map(formatCircle)
 }
 
-async function isUserInCircle(circleId, userId) {
+async function findCircleById(circleId) {
+  const [rows] = await pool.query(
+    `
+    SELECT
+      c.id,
+      c.name,
+      c.description,
+      c.cover_url,
+      c.creator_id,
+      c.is_public,
+      c.status,
+      c.created_at,
+      c.updated_at,
+      COUNT(cm.id) AS member_count
+    FROM circles c
+    LEFT JOIN circle_members cm
+      ON cm.circle_id = c.id
+    WHERE c.id = ?
+    GROUP BY
+      c.id, c.name, c.description, c.cover_url,
+      c.creator_id, c.is_public, c.status,
+      c.created_at, c.updated_at
+    LIMIT 1
+    `,
+    [circleId]
+  )
+
+  return formatCircle(rows[0])
+}
+
+async function hasJoinedCircle(circleId, userId) {
   const [rows] = await pool.query(
     `
     SELECT id
@@ -88,6 +123,23 @@ async function isUserInCircle(circleId, userId) {
   return rows.length > 0
 }
 
+async function createCircle(data) {
+  const [result] = await pool.query(
+    `
+    INSERT INTO circles (name, description, creator_id, is_public, status)
+    VALUES (?, ?, ?, ?, 'active')
+    `,
+    [
+      data.name,
+      data.description || null,
+      data.creatorId,
+      data.isPublic ? 1 : 0,
+    ]
+  )
+
+  return result.insertId
+}
+
 async function addCircleMember(circleId, userId, role = 'member') {
   await pool.query(
     `
@@ -97,14 +149,19 @@ async function addCircleMember(circleId, userId, role = 'member') {
     `,
     [circleId, userId, role]
   )
+}
 
+async function joinCircle(circleId, userId) {
+  await addCircleMember(circleId, userId, 'member')
   return findCircleById(circleId)
 }
 
 module.exports = {
-  findCircleById,
   listHotCircles,
-  listMyCircles,
-  isUserInCircle,
+  listCircles,
+  findCircleById,
+  hasJoinedCircle,
+  createCircle,
   addCircleMember,
+  joinCircle,
 }

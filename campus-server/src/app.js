@@ -26,6 +26,8 @@ app.use('/users', userController)
 app.use('/home', homeController)
 app.use('/circles', circleController)
 app.use('/events', eventController)
+const circlController = require('./circles/circle.controller')
+app.use('/circles', circlController)
 
 async function start() {
   try {
