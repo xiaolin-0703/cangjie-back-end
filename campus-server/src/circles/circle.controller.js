@@ -49,4 +49,22 @@ router.post('/:id/join', authMiddleware, async (req, res) => {
   }
 })
 
+router.get('/:id/posts', authMiddleware, async (req, res) => {
+  try {
+    const result = await circleService.getCirclePostsByUser(req.user.userId, req.params.id)
+    res.json(result)
+  } catch (err) {
+    res.status(400).json({ message: err.message })
+  }
+})
+
+router.post('/:id/posts', authMiddleware, async (req, res) => {
+  try {
+    const result = await circleService.createPostByUser(req.user.userId, req.params.id, req.body)
+    res.json(result)
+  } catch (err) {
+    res.status(400).json({ message: err.message })
+  }
+})
+
 module.exports = router

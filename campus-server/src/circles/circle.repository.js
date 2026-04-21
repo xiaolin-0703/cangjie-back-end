@@ -17,6 +17,80 @@ function formatCircle(row) {
   }
 }
 
+function formatPost(row) {
+  if (!row) return null
+
+  return {
+    id: row.id,
+    circleId: row.circle_id,
+    userId: row.user_id,
+    title: row.title,
+    content: row.content,
+    nickname: row.nickname || '',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+async function listCirclePosts(circleId, limit = 20) {
+  const [rows] = await pool.query(
+    `
+    SELECT
+      p.id,
+      p.circle_id,
+      p.user_id,
+      p.title,
+      p.content,
+      p.created_at,
+      p.updated_at,
+      u.nickname
+    FROM posts p
+    LEFT JOIN users u ON u.id = p.user_id
+    WHERE p.circle_id = ? AND p.status = 'active'
+    ORDER BY p.created_at DESC
+    LIMIT ?
+    `,
+    [circleId, limit]
+  )
+
+  return rows.map(formatPost)
+}
+
+async function findPostById(postId) {
+  const [rows] = await pool.query(
+    `
+    SELECT
+      p.id,
+      p.circle_id,
+      p.user_id,
+      p.title,
+      p.content,
+      p.created_at,
+      p.updated_at,
+      u.nickname
+    FROM posts p
+    LEFT JOIN users u ON u.id = p.user_id
+    WHERE p.id = ? AND p.status = 'active'
+    LIMIT 1
+    `,
+    [postId]
+  )
+
+  return formatPost(rows[0])
+}
+
+async function createPost(data) {
+  const [result] = await pool.query(
+    `
+    INSERT INTO posts (circle_id, user_id, title, content, status)
+    VALUES (?, ?, ?, ?, 'active')
+    `,
+    [data.circleId, data.userId, data.title, data.content]
+  )
+
+  return result.insertId
+}
+
 async function listHotCircles(limit = 3) {
   const [rows] = await pool.query(
     `
@@ -164,4 +238,7 @@ module.exports = {
   createCircle,
   addCircleMember,
   joinCircle,
+  listCirclePosts,
+  findPostById,
+  createPost,
 }

@@ -155,6 +155,21 @@ async function ensureDatabaseReady() {
         INDEX idx_user_id (user_id)
       )
     `)
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS posts (
+        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+        circle_id BIGINT NOT NULL,
+        user_id BIGINT NOT NULL,
+        title VARCHAR(100) NOT NULL,
+        content TEXT NOT NULL,
+        status ENUM('active', 'deleted') NOT NULL DEFAULT 'active',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_circle_id (circle_id),
+        INDEX idx_user_id (user_id)
+      )
+    `)
   } finally {
     await connection.end()
   }
